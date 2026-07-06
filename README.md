@@ -70,7 +70,7 @@ VS Code with the Extension Pack for Java installed
 
 Steps
 Clone the repository
-git clone https://github.com/ishmal-codes/Tic-Tac-Toe-Project.git
+git clone (https://github.com/rishwanththota/Tic-Tac-Toe)
 cd Tic-Tac-Toe-Project
 
 Open in VS Code
@@ -101,19 +101,6 @@ Run from the terminal
 │            [ NEW GAME ]             │
 └─────────────────────────────────────┘
 ```
-
----
-
-🛠️ Tech Stack
-Language: Java 11+
-
-GUI Framework: Java Swing (javax.swing)
-
-Build: Plain javac — no Maven/Gradle required
-
-Lines of code: ~350
-
----
 
 ## 📄 License
 

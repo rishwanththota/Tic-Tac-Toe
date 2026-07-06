@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic-Tac-Toe ★ Wood Edition</title>
+<style>
+    :root {
+        --wood-dark: #361d0d;
+        --wood-medium: #66330f;
+        --wood-light: #a06030;
+        --wood-text: #f5d2a0;
+        --dark-3d: #1e1e1e;
+        --btn-bevel: #230f05;
+        --cell-dark: #190c05;
+        --field-bg: #2d1608;
+        --x-shadow: #640000;
+        --o-gold: #f0a028;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+        height: 100%;
+        margin: 0;
+        font-family: Georgia, 'Times New Roman', serif;
+        overflow: hidden;
+    }
+
+    body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+    }
+
+    #app {
+        position: relative;
+        width: 700px;
+        height: 750px;
+        max-width: 100vw;
+        max-height: 100vh;
+        box-shadow: 0 0 60px rgba(0,0,0,0.7);
+        overflow: hidden;
+    }
+
+    /* ===== Wood panel background (matches createWoodPanel) ===== */
+    .wood-panel {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to right, var(--wood-medium), var(--wood-dark));
+        display: none;
+        flex-direction: column;
+        align-items: center;
+    }
+    .wood-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: repeating-linear-gradient(
+            90deg,
+            rgba(40, 20, 10, 0.47) 0px,
+            rgba(40, 20, 10, 0.47) 2px,
+            transparent 2px,
+            transparent 75px
+        );
+        pointer-events: none;
+    }
+    .wood-panel.active { display: flex; }
+
+    /* ===== Wood buttons (matches createWoodButton) ===== */
+    .wood-btn {
+        position: relative;
+        z-index: 1;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-weight: bold;
+        font-size: 24px;
+        color: var(--wood-text);
+        text-shadow: 2px 2px 0 var(--wood-dark);
+        background: linear-gradient(to bottom, var(--wood-light), var(--wood-medium));
+        border: 1.5px solid rgba(255,255,255,0.16);
+        border-radius: 18px;
+        box-shadow: 0 5px 0 var(--btn-bevel);
+        cursor: pointer;
+        padding: 14px 22px;
+        transition: transform 0.05s ease;
+    }
+    .wood-btn:hover { filter: brightness(1.08); }
+    .wood-btn:active {
+        transform: translateY(4px);
+        box-shadow: 0 1px 0 var(--btn-bevel);
+    }
+
+    /* ===== HOME SCREEN ===== */
+    #home-screen { justify-content: flex-start; padding-top: 100px; }
+    #home-screen .title {
+        font-size: 65px;
+        font-weight: bold;
+        color: var(--wood-text);
+        text-shadow: 3px 3px 0 var(--wood-dark);
+        margin: 0 0 100px 0;
+        letter-spacing: 2px;
+    }
+    #home-screen .wood-btn { width: 280px; height: 60px; margin-bottom: 40px; }
+
+    /* ===== GRID SELECT SCREEN ===== */
+    #grid-select-screen { justify-content: flex-start; padding-top: 150px; }
+    #grid-select-screen .heading {
+        font-size: 45px;
+        font-weight: bold;
+        color: var(--wood-text);
+        text-shadow: 3px 3px 0 var(--wood-dark);
+        margin: 0 0 80px 0;
+    }
+    #grid-select-screen .grid-btn-row {
+        display: flex;
+        gap: 25px;
+    }
+    #grid-select-screen .wood-btn { width: 140px; height: 70px; }
+
+    /* ===== GAMEPLAY SCREEN ===== */
+    #gameplay-screen {
+        justify-content: flex-start;
+        padding: 30px;
+    }
+    #status-label {
+        font-size: 38px;
+        font-weight: bold;
+        color: var(--wood-text);
+        text-shadow: 2px 2px 0 var(--wood-dark);
+        margin-bottom: 20px;
+        text-align: center;
+        z-index: 1;
+        position: relative;
+    }
+    #board-container {
+        display: grid;
+        gap: 12px;
+        width: 100%;
+        max-width: 600px;
+        aspect-ratio: 1 / 1;
+        z-index: 1;
+        position: relative;
+    }
+    .cell {
+        background-color: var(--cell-dark);
+        border-radius: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .cell::before {
+        content: "";
+        position: absolute;
+        inset: 2px;
+        background-color: var(--wood-medium);
+        border-radius: 10px;
+    }
+    .cell .mark {
+        position: relative;
+        z-index: 1;
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        line-height: 1;
+    }
+    .mark-x { color: cyan; text-shadow: 2px 2px 0 var(--x-shadow); }
+    .mark-o { color: var(--o-gold); text-shadow: 2px 2px 0 var(--dark-3d); }
+
+    /* ===== MODAL / CUSTOM JDIALOG STYLE ===== */
+    .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal-box {
+        background-color: var(--wood-dark);
+        border-radius: 25px;
+        padding: 6px;
+        width: 420px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    }
+    .modal-inner {
+        background-color: var(--wood-medium);
+        border-radius: 20px;
+        padding: 30px 25px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .modal-inner .prompt {
+        font-size: 20px;
+        font-weight: bold;
+        color: var(--wood-text);
+        text-align: center;
+        margin: 12px 0;
+    }
+    .modal-inner input[type="text"] {
+        width: 260px;
+        max-width: 100%;
+        height: 42px;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 20px;
+        text-align: center;
+        background-color: var(--field-bg);
+        color: var(--wood-text);
+        border: 2px solid var(--wood-light);
+        border-radius: 6px;
+        outline: none;
+        margin-bottom: 12px;
+    }
+    .modal-inner input[type="text"]::selection { background: var(--wood-light); }
+    .modal-btn-row {
+        display: flex;
+        gap: 20px;
+        margin-top: 15px;
+    }
+    .modal-btn-row .wood-btn {
+        width: 140px;
+        height: 48px;
+        font-size: 20px;
+        padding: 0;
+    }
+    .modal-diff-btn {
+        width: 220px;
+        height: 55px;
+        margin-bottom: 15px;
+        font-size: 22px;
+    }
+    .modal-result {
+        font-size: 32px;
+        font-weight: bold;
+        color: var(--wood-text);
+        text-shadow: 2px 2px 0 var(--wood-dark);
+        text-align: center;
+        margin: 25px 0;
+    }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+    <!-- HOME SCREEN -->
+    <div id="home-screen" class="wood-panel active">
+        <div class="title">TIC-X-O</div>
+        <button class="wood-btn" id="onePlayerBtn">1 Player</button>
+        <button class="wood-btn" id="twoPlayerBtn">2 Players</button>
+    </div>
+
+    <!-- GRID SELECT SCREEN -->
+    <div id="grid-select-screen" class="wood-panel">
+        <div class="heading">CHOOSE A GRID</div>
+        <div class="grid-btn-row">
+            <button class="wood-btn" data-size="3">3 X 3</button>
+            <button class="wood-btn" data-size="5">5 X 5</button>
+            <button class="wood-btn" data-size="7">7 X 7</button>
+        </div>
+    </div>
+
+    <!-- GAMEPLAY SCREEN -->
+    <div id="gameplay-screen" class="wood-panel">
+        <div id="status-label">Your Turn</div>
+        <div id="board-container"></div>
+    </div>
+
+    <!-- SINGLE PLAYER NAME DIALOG -->
+    <div class="modal-overlay" id="singleNameModal">
+        <div class="modal-box">
+            <div class="modal-inner">
+                <div class="prompt">ENTER YOUR NAME:</div>
+                <input type="text" id="singleNameField" maxlength="20">
+                <div class="modal-btn-row">
+                    <button class="wood-btn" id="singleNameOk">OK</button>
+                    <button class="wood-btn" id="singleNameCancel">CANCEL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TWO PLAYER NAME DIALOG -->
+    <div class="modal-overlay" id="twoNameModal">
+        <div class="modal-box">
+            <div class="modal-inner">
+                <div class="prompt">ENTER PLAYER 1 NAME:</div>
+                <input type="text" id="p1NameField" maxlength="20">
+                <div class="prompt">ENTER PLAYER 2 NAME:</div>
+                <input type="text" id="p2NameField" maxlength="20">
+                <div class="modal-btn-row">
+                    <button class="wood-btn" id="twoNameOk">OK</button>
+                    <button class="wood-btn" id="twoNameCancel">CANCEL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIFFICULTY DIALOG -->
+    <div class="modal-overlay" id="difficultyModal">
+        <div class="modal-box">
+            <div class="modal-inner">
+                <div class="prompt">SELECT AI DIFFICULTY:</div>
+                <button class="wood-btn modal-diff-btn" data-difficulty="EASY">Easy</button>
+                <button class="wood-btn modal-diff-btn" data-difficulty="MEDIUM">Medium</button>
+                <button class="wood-btn modal-diff-btn" data-difficulty="HARD">Hard</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME OVER DIALOG -->
+    <div class="modal-overlay" id="gameOverModal">
+        <div class="modal-box">
+            <div class="modal-inner">
+                <div class="modal-result" id="gameResultLabel"></div>
+                <button class="wood-btn" id="playAgainBtn" style="width:220px;height:50px;font-size:22px;">PLAY AGAIN</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // =====================================================================
+    //  GAME LOGIC  (ported 1:1 from GameLogic.java)
+    // =====================================================================
+    const GameLogic = {
+        gridSize: 3,
+        board: [],
+        isPlayerXTurn: true,
+        isSinglePlayer: false,
+        gameOver: false,
+        gameResult: "",
+        player1Name: "Player 1",
+        player2Name: "Player 2",
+        difficulty: "MEDIUM",
+
+        initGame(size, singlePlayer) {
+            this.gridSize = size;
+            this.isSinglePlayer = singlePlayer;
+            this.board = [];
+            for (let i = 0; i < size; i++) {
+                const row = [];
+                for (let j = 0; j < size; j++) row.push(' ');
+                this.board.push(row);
+            }
+            this.isPlayerXTurn = true;
+            this.gameOver = false;
+            this.gameResult = "";
+        },
+
+        setPlayer1Name(name) {
+            this.player1Name = (name && name.trim() !== "") ? name.trim() : "Player 1";
+        },
+        setPlayer2Name(name) {
+            this.player2Name = (name && name.trim() !== "") ? name.trim() : "Player 2";
+        },
+
+        setDifficulty(difficulty) {
+            const upper = (difficulty || "").toUpperCase();
+            this.difficulty = (upper === "EASY" || upper === "MEDIUM" || upper === "HARD") ? upper : "MEDIUM";
+        },
+
+        makeMove(row, col) {
+            if (row < 0 || row >= this.gridSize || col < 0 || col >= this.gridSize ||
+                this.board[row][col] !== ' ' || this.gameOver) {
+                return false;
+            }
+
+            // 1. Current player's move
+            this.board[row][col] = this.isPlayerXTurn ? 'X' : 'O';
+            this.checkGameState();
+
+            // 2. If single player and match continues, AI turn plays
+            if (!this.gameOver) {
+                this.isPlayerXTurn = !this.isPlayerXTurn;
+                if (this.isSinglePlayer && !this.isPlayerXTurn) {
+                    this.makeAIMove();
+                }
+            }
+            return true;
+        },
+
+        makeAIMove() {
+            if (this.gameOver) return;
+
+            // DIFFICULTY LOGIC:
+            // EASY   -> always random
+            // MEDIUM -> 50/50 competitive mix
+            // HARD   -> always smart (win/block priority)
+            let playSmart;
+            if (this.difficulty === "EASY") {
+                playSmart = false;
+            } else if (this.difficulty === "HARD") {
+                playSmart = true;
+            } else {
+                playSmart = Math.random() < 0.50;
+            }
+
+            if (playSmart) {
+                // Smart Decision 1: winning move
+                for (let i = 0; i < this.gridSize; i++) {
+                    for (let j = 0; j < this.gridSize; j++) {
+                        if (this.board[i][j] === ' ') {
+                            this.board[i][j] = 'O';
+                            if (this.checkWin('O')) {
+                                this.checkGameState();
+                                this.isPlayerXTurn = true;
+                                return;
+                            }
+                            this.board[i][j] = ' ';
+                        }
+                    }
+                }
+
+                // Smart Decision 2: block user's winning move
+                for (let i = 0; i < this.gridSize; i++) {
+                    for (let j = 0; j < this.gridSize; j++) {
+                        if (this.board[i][j] === ' ') {
+                            this.board[i][j] = 'X';
+                            if (this.checkWin('X')) {
+                                this.board[i][j] = 'O';
+                                this.checkGameState();
+                                this.isPlayerXTurn = true;
+                                return;
+                            }
+                            this.board[i][j] = ' ';
+                        }
+                    }
+                }
+            }
+
+            this.makeRandomAIMove();
+        },
+
+        makeRandomAIMove() {
+            const emptyCells = [];
+            for (let i = 0; i < this.gridSize; i++) {
+                for (let j = 0; j < this.gridSize; j++) {
+                    if (this.board[i][j] === ' ') emptyCells.push([i, j]);
+                }
+            }
+            if (emptyCells.length > 0) {
+                const [r, c] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                this.board[r][c] = 'O';
+                this.checkGameState();
+                this.isPlayerXTurn = true;
+            }
+        },
+
+        checkGameState() {
+            if (this.checkWin('X')) {
+                this.gameOver = true;
+                this.gameResult = this.player1Name.toUpperCase() + " WINS!!!";
+            } else if (this.checkWin('O')) {
+                this.gameOver = true;
+                this.gameResult = this.player2Name.toUpperCase() + " WINS!!!";
+            } else if (this.isBoardFull()) {
+                this.gameOver = true;
+                this.gameResult = "IT'S A DRAW!!!";
+            }
+        },
+
+        checkWin(player) {
+            const size = this.gridSize;
+            const target = (size === 3) ? 3 : 4;
+            const b = this.board;
+
+            // Horizontal
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j <= size - target; j++) {
+                    let win = true;
+                    for (let k = 0; k < target; k++) {
+                        if (b[i][j + k] !== player) { win = false; break; }
+                    }
+                    if (win) return true;
+                }
+            }
+            // Vertical
+            for (let j = 0; j < size; j++) {
+                for (let i = 0; i <= size - target; i++) {
+                    let win = true;
+                    for (let k = 0; k < target; k++) {
+                        if (b[i + k][j] !== player) { win = false; break; }
+                    }
+                    if (win) return true;
+                }
+            }
+            // Main diagonal
+            for (let i = 0; i <= size - target; i++) {
+                for (let j = 0; j <= size - target; j++) {
+                    let win = true;
+                    for (let k = 0; k < target; k++) {
+                        if (b[i + k][j + k] !== player) { win = false; break; }
+                    }
+                    if (win) return true;
+                }
+            }
+            // Inverse diagonal
+            for (let i = target - 1; i < size; i++) {
+                for (let j = 0; j <= size - target; j++) {
+                    let win = true;
+                    for (let k = 0; k < target; k++) {
+                        if (b[i - k][j + k] !== player) { win = false; break; }
+                    }
+                    if (win) return true;
+                }
+            }
+            return false;
+        },
+
+        isBoardFull() {
+            for (let i = 0; i < this.gridSize; i++) {
+                for (let j = 0; j < this.gridSize; j++) {
+                    if (this.board[i][j] === ' ') return false;
+                }
+            }
+            return true;
+        }
+    };
+
+    // =====================================================================
+    //  UI  (ported 1:1 from GameUI.java)
+    // =====================================================================
+    const screens = {
+        home: document.getElementById('home-screen'),
+        gridSelect: document.getElementById('grid-select-screen'),
+        gameplay: document.getElementById('gameplay-screen')
+    };
+
+    function showScreen(name) {
+        Object.values(screens).forEach(s => s.classList.remove('active'));
+        screens[name].classList.add('active');
+    }
+
+    function showModal(id) { document.getElementById(id).classList.add('active'); }
+    function hideModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // ---------- HOME SCREEN ----------
+    document.getElementById('onePlayerBtn').addEventListener('click', () => {
+        document.getElementById('singleNameField').value = "";
+        showModal('singleNameModal');
+    });
+
+    document.getElementById('twoPlayerBtn').addEventListener('click', () => {
+        document.getElementById('p1NameField').value = "";
+        document.getElementById('p2NameField').value = "";
+        showModal('twoNameModal');
+    });
+
+    // ---------- SINGLE PLAYER NAME DIALOG ----------
+    document.getElementById('singleNameOk').addEventListener('click', () => {
+        const name = document.getElementById('singleNameField').value.trim();
+        GameLogic.setPlayer1Name(name || "Player 1");
+        GameLogic.initGame(3, true);
+        hideModal('singleNameModal');
+        showScreen('gridSelect');
+    });
+    document.getElementById('singleNameCancel').addEventListener('click', () => {
+        hideModal('singleNameModal');
+    });
+
+    // ---------- TWO PLAYER NAME DIALOG ----------
+    document.getElementById('twoNameOk').addEventListener('click', () => {
+        const p1 = document.getElementById('p1NameField').value.trim();
+        const p2 = document.getElementById('p2NameField').value.trim();
+        GameLogic.setPlayer1Name(p1 || "Player 1");
+        GameLogic.setPlayer2Name(p2 || "Player 2");
+        GameLogic.initGame(3, false);
+        hideModal('twoNameModal');
+        showScreen('gridSelect');
+    });
+    document.getElementById('twoNameCancel').addEventListener('click', () => {
+        hideModal('twoNameModal');
+    });
+
+    // ---------- GRID SELECT SCREEN ----------
+    document.querySelectorAll('#grid-select-screen [data-size]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const size = parseInt(btn.getAttribute('data-size'), 10);
+            launchGameWithGrid(size);
+        });
+    });
+
+    function launchGameWithGrid(size) {
+        // Re-init keeping the current single/two player mode, just like Java
+        GameLogic.initGame(size, GameLogic.isSinglePlayer);
+
+        if (GameLogic.isSinglePlayer) {
+            showModal('difficultyModal');
+            // Difficulty dialog buttons finish the launch (see below)
+            pendingGridSizeForDifficulty = size;
+        } else {
+            buildDynamicGameplayGrid(size);
+            showScreen('gameplay');
+        }
+    }
+
+    let pendingGridSizeForDifficulty = null;
+
+    // ---------- DIFFICULTY DIALOG ----------
+    document.querySelectorAll('#difficultyModal [data-difficulty]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            GameLogic.setDifficulty(btn.getAttribute('data-difficulty'));
+            hideModal('difficultyModal');
+            buildDynamicGameplayGrid(pendingGridSizeForDifficulty);
+            showScreen('gameplay');
+        });
+    });
+
+    // ---------- GAMEPLAY SCREEN ----------
+    const statusLabel = document.getElementById('status-label');
+    const boardContainer = document.getElementById('board-container');
+
+    function buildDynamicGameplayGrid(size) {
+        boardContainer.innerHTML = "";
+        boardContainer.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        boardContainer.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.row = r;
+                cell.dataset.col = c;
+
+                const markSpan = document.createElement('span');
+                markSpan.className = 'mark';
+                cell.appendChild(markSpan);
+
+                cell.addEventListener('click', () => {
+                    const row = parseInt(cell.dataset.row, 10);
+                    const col = parseInt(cell.dataset.col, 10);
+                    if (GameLogic.makeMove(row, col)) {
+                        renderBoard();
+                        updateStatusMessage();
+                        if (GameLogic.gameOver) {
+                            triggerCustomGameOverPopup();
+                        }
+                    }
+                });
+
+                boardContainer.appendChild(cell);
+            }
+        }
+        renderBoard();
+        updateStatusMessage();
+        sizeMarksToBoard();
+    }
+
+    function renderBoard() {
+        const cells = boardContainer.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            const r = parseInt(cell.dataset.row, 10);
+            const c = parseInt(cell.dataset.col, 10);
+            const marker = GameLogic.board[r][c];
+            const span = cell.querySelector('.mark');
+            span.textContent = marker === ' ' ? '' : marker;
+            span.className = 'mark' + (marker === 'X' ? ' mark-x' : marker === 'O' ? ' mark-o' : '');
+        });
+    }
+
+    function sizeMarksToBoard() {
+        // Scale font size relative to cell size, similar to getWidth()/2 + 5 in Java
+        requestAnimationFrame(() => {
+            const firstCell = boardContainer.querySelector('.cell');
+            if (!firstCell) return;
+            const cellWidth = firstCell.getBoundingClientRect().width;
+            const fontSize = Math.max(18, cellWidth / 2 + 5);
+            boardContainer.querySelectorAll('.mark').forEach(m => {
+                m.style.fontSize = fontSize + 'px';
+            });
+        });
+    }
+
+    window.addEventListener('resize', sizeMarksToBoard);
+
+    function updateStatusMessage() {
+        if (GameLogic.gameOver) {
+            statusLabel.textContent = "Match Settled!";
+        } else {
+            statusLabel.textContent = GameLogic.isPlayerXTurn
+                ? GameLogic.player1Name + "'s Turn"
+                : GameLogic.player2Name + "'s Turn";
+        }
+    }
+
+    // ---------- GAME OVER DIALOG ----------
+    function triggerCustomGameOverPopup() {
+        document.getElementById('gameResultLabel').textContent = GameLogic.gameResult;
+        showModal('gameOverModal');
+    }
+
+    document.getElementById('playAgainBtn').addEventListener('click', () => {
+        hideModal('gameOverModal');
+        showScreen('home');
+    });
+
+    // ---------- INITIAL STATE ----------
+    GameLogic.initGame(3, false);
+    showScreen('home');
+</script>
+
+</body>
+</html>
